@@ -53,7 +53,23 @@ git clone https://github.com/FYSolution/SecondBrain_GitHub_Copilot_Setup.git
 
 # Copy the Second_Brain folder into your project
 cp -r SecondBrain_GitHub_Copilot_Setup/Second_Brain /path/to/your-project/
+
+# Copy the .github folder into your project ROOT
+cp -r SecondBrain_GitHub_Copilot_Setup/.github /path/to/your-project/
 ```
+
+> **⚠️ IMPORTANT: The `.github` folder MUST be placed at the workspace/solution root.**
+>
+> VS Code and GitHub Copilot only recognize `.github/copilot-instructions.md` and `.github/agents/` from the **root** of your workspace. If you place it inside a subfolder (e.g., `src/.github/` or `Second_Brain/.github/`), it will be **ignored** — and any other `.github` folder at the root level will take priority, effectively overriding your Second Brain instructions.
+>
+> If your repo already has a `.github` folder, **merge** the contents (don't replace):
+>
+> ```bash
+> # Merge copilot-instructions into existing .github
+> cp SecondBrain_GitHub_Copilot_Setup/.github/copilot-instructions.md /path/to/your-project/.github/
+> cp -r SecondBrain_GitHub_Copilot_Setup/.github/agents/ /path/to/your-project/.github/agents/
+> cp -r SecondBrain_GitHub_Copilot_Setup/.github/instructions/ /path/to/your-project/.github/instructions/
+> ```
 
 ### 2. Configure your Copilot instructions
 
