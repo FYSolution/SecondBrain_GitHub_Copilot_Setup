@@ -1,0 +1,1 @@
+# SecondBrain_GitHub_Copilot_Setup
