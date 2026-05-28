@@ -319,6 +319,89 @@ The system is designed for teams:
 
 ---
 
+## Beyond Second Brain: Capturing the Thinking Flow
+
+### The Missing Knowledge Layer
+
+A codebase is a **snapshot** — it tells you _what_ exists today but not _why_ it evolved this way, _what was tried and rejected_, or _how the team's understanding grew over time_. Traditional documentation captures decisions at a single point; it doesn't capture the **longitudinal thinking flow** — the sequence of reasoning, pivots, discoveries, and accumulated judgment that a team develops over months and years.
+
+This thinking flow is among the rarest and most valuable knowledge in any organization. It lives in people's heads, scattered across chat histories, and is lost when team members move on.
+
+### What Second Brain Uniquely Captures
+
+Unlike conventional docs or code comments, the Second Brain's timeline-structured artifacts preserve the **growth trajectory** of project understanding:
+
+```
+Timeline ──────────────────────────────────────────────────────────▶
+
+  Day 1          Day 30           Day 90           Day 180
+  ┌────┐         ┌────┐           ┌────┐           ┌────┐
+  │Init│         │Pivot│          │Scale│           │Mature│
+  │Assumptions│  │Corrections│    │Patterns│        │Wisdom│
+  │First design│ │Lessons learned│ │Architecture│   │Org knowledge│
+  └────┘         └────┘           └────┘           └────┘
+     │               │                │                │
+     ▼               ▼                ▼                ▼
+  journal/        lessons.md       concepts/       analysis/
+  log/            entities/ (v2)   wiki/overview   wiki/ (mature)
+```
+
+| Artifact               | What It Preserves                                                           |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `wiki/journal/{user}/` | Daily reasoning chains — why decisions were made, not just what             |
+| `wiki/log/{user}/`     | Chronological operations — the sequence of actions and their outcomes       |
+| `wiki/lessons.md`      | Corrections over time — what the team learned was wrong and why             |
+| `wiki/analysis/`       | Deep explorations — multi-source synthesis that reveals thinking patterns   |
+| `raw/decisions/`       | Decision context — options considered, tradeoffs weighed, stakeholder input |
+| `raw/code-updates/`    | Evolution narrative — how the system grew session by session                |
+
+### The Long-Term Vision: From Human Knowledge to Organizational Intelligence
+
+The Second Brain is not just a developer productivity tool — it's a **knowledge harvesting infrastructure** designed for a future where AI moves beyond coding assistance into autonomous decision-making:
+
+#### Phase 1: Knowledge Capture (Now)
+
+- Sync project knowledge and human team experiences into structured, timestamped artifacts
+- Preserve the reasoning process behind every decision — not just the outcome
+- Accumulate domain expertise that would otherwise exist only in senior team members' minds
+
+#### Phase 2: Organizational Knowledge Library
+
+- Aggregate Second Brain wikis across multiple projects into an **organization-level knowledge graph**
+- Cross-reference patterns, lessons, and architectural decisions across teams
+- Build a living library of institutional wisdom that survives team turnover
+
+#### Phase 3: AI-Driven Autonomous Operations
+
+- Train domain-specific AI models on the captured thinking flows — not just code, but the _reasoning behind code_
+- Enable AI to make informed decisions **without human in the loop** for:
+  - Development prioritization and architectural choices
+  - Project management and resource allocation
+  - Auditing and compliance verification
+  - Accounting and financial pattern recognition
+  - Risk assessment based on historical decision outcomes
+
+#### Why Thinking Flow > Code for AI Training
+
+| Training Data                                 | What AI Learns                                                                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Code snapshots                                | Syntax, patterns, structure (shallow)                                                                              |
+| Commit history                                | What changed, but not why                                                                                          |
+| **Thinking flow (journals + logs + lessons)** | **Reasoning chains, tradeoff evaluation, decision-making under uncertainty, correction patterns, domain judgment** |
+
+The thinking flow is the closest representation of **expert human judgment** in a machine-readable format. It's the dataset that bridges the gap between AI that can write code and AI that can make sound engineering/business decisions.
+
+### Practical Implications
+
+- **Every session you run today** is an investment in future AI capability
+- **Every correction logged** teaches future systems what not to do
+- **Every planning session captured** models expert decision-making for AI training
+- **Every team member's journal** contributes unique perspective to organizational intelligence
+
+The Second Brain transforms ephemeral human expertise into a durable, compounding asset — one that serves humans today and trains autonomous systems tomorrow.
+
+---
+
 ## Obsidian Integration
 
 The wiki is plain markdown and works as an [Obsidian](https://obsidian.md) vault:
