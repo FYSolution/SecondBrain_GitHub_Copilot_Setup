@@ -1,292 +1,233 @@
-# Second Brain — Usage Guide
+# Second Brain v2 — Usage Guide (Fragment Architecture)
 
 ## What Is This?
 
-The **Second Brain** is a persistent, LLM-maintained project wiki that lives alongside your code. It automatically captures, organizes, and surfaces project knowledge so that every future coding session, code review, and design decision benefits from everything the team has learned.
+The **Second Brain** is a persistent, LLM-maintained project wiki that lives alongside your code.
+It automatically captures, organizes, and surfaces project knowledge so that every future coding
+session benefits from everything the team has learned.
 
-Unlike traditional documentation that goes stale, the Second Brain is **auto-updated by your AI assistant** at the end of every task — no manual effort required.
+### What's Different in v2?
+
+v2 uses **atomic fragments** instead of shared mutable pages. This means:
+- **Zero merge conflicts** — each developer writes only to their own folder
+- **AI synthesis** — the LLM intelligently combines knowledge from all developers
+- **Full history** — nothing is ever overwritten; knowledge evolution is traceable
+- **No manual coordination** — work independently, knowledge merges automatically
 
 ---
 
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         YOUR WORKFLOW                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│  ┌──────────┐     ┌───────────────────┐     ┌───────────────────┐   │
-│  │  Human    │     │  Copilot (LLM)    │     │  Second Brain     │   │
-│  │           │     │                   │     │  (wiki/)          │   │
-│  │ • Code    │────▶│ • Reads wiki at   │────▶│ • entities/       │   │
-│  │ • Design  │     │   session start   │     │ • concepts/       │   │
-│  │ • Review  │     │ • Answers from    │     │ • sources/        │   │
-│  │ • Drop    │     │   wiki first      │     │ • analysis/       │   │
-│  │   docs    │     │ • Auto-updates    │     │ • lessons.md      │   │
-│  │           │     │   after each task  │     │ • journal/{user}/ │   │
-│  └──────────┘     └───────────────────┘     └───────────────────┘   │
-│       │                                             ▲                 │
-│       │           ┌───────────────────┐             │                 │
-│       └──────────▶│  Raw Sources      │─────────────┘                 │
-│                   │  (raw/)           │  ingested into wiki            │
-│                   │  • requirements/  │                               │
-│                   │  • design/        │                               │
-│                   │  • analysis/      │                               │
-│                   └───────────────────┘                               │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         YOUR WORKFLOW                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  ┌──────────┐     ┌──────────────────────┐     ┌─────────────────────┐  │
+│  │  Human    │     │  Copilot (LLM)       │     │  Second Brain       │  │
+│  │           │     │                      │     │                     │  │
+│  │ • Code    │────▶│ • Compiles fragments │────▶│  COMMITTED:         │  │
+│  │ • Design  │     │   at session start   │     │  fragments/{user}/  │  │
+│  │ • Review  │     │ • Synthesizes AI     │     │  log/{user}/        │  │
+│  │ • Drop    │     │   understanding      │     │  journal/{user}/    │  │
+│  │   docs    │     │ • Writes new         │     │                     │  │
+│  │           │     │   fragments after     │     │  GITIGNORED:        │  │
+│  │           │     │   each task           │     │  .compiled/         │  │
+│  └──────────┘     └──────────────────────┘     └─────────────────────┘  │
+│       │                                                ▲                  │
+│       │           ┌───────────────────┐                │                  │
+│       └──────────▶│  Raw Sources      │────────────────┘                  │
+│                   │  (raw/)           │  ingested as fragments             │
+│                   └───────────────────┘                                   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### The Three Layers
 
-| Layer      | Path        | Who Owns It   | Purpose                                                           |
-| ---------- | ----------- | ------------- | ----------------------------------------------------------------- |
-| **Raw**    | `raw/`      | You (human)   | Immutable source documents — requirements, designs, meeting notes |
-| **Wiki**   | `wiki/`     | LLM (Copilot) | Synthesized, cross-referenced knowledge pages                     |
-| **Schema** | `SCHEMA.md` | Team          | Rules that tell the LLM how to maintain the wiki                  |
+| Layer | Path | Who Owns It | Purpose |
+|---|---|---|---|
+| **Raw** | `raw/` | You (human) | Immutable source documents |
+| **Fragments** | `wiki/fragments/{user}/` | LLM (per-user) | Atomic knowledge units — the source of truth |
+| **Compiled** | `wiki/.compiled/` | LLM (local) | AI-synthesized readable pages — generated, never committed |
+| **Schema** | `SCHEMA.md` | Team | Rules that tell the LLM how to maintain the wiki |
+
+---
+
+## Why Zero Conflicts?
+
+Each developer's LLM writes ONLY to:
+- `wiki/fragments/{your-username}/`
+- `wiki/log/{your-username}/`
+- `wiki/journal/{your-username}/`
+- `raw/code-updates/{your-username}-*.md`
+
+**Git never produces merge conflicts on new file creation in different paths.**
+
+When you pull other developers' fragments, the LLM compiles them locally into a unified view. No shared mutable files exist.
 
 ---
 
 ## Automated Behaviors (What Copilot Does For You)
 
-### 1. Session Start — Context Loading + New Source Detection
+### 1. Session Start — Compile + Context Load
 
 Every time you open a chat, Copilot automatically:
 
-- Reads `wiki/index.md` to understand the full knowledge map
-- Loads your recent log for continuity with past sessions
-- **Scans `raw/` for un-ingested documents** — if you dropped new files, it notifies you:
-  > "I found 3 new raw sources not yet ingested. Want me to process them?"
+1. Runs `scripts/compile-wiki.ps1` (< 1 second)
+2. Reads the compiled manifest to understand available knowledge
+3. Reads your recent log for continuity with past sessions
+4. Scans other users' recent logs for team awareness
+5. Synthesizes relevant knowledge intelligently (not just concatenation)
+6. Scans `raw/` for un-ingested documents
 
-### 2. Chat End — Auto-Summary Sync
+### 2. Task End — Write Fragments
 
-After every task that produces reusable knowledge, Copilot automatically:
+After every task that produces knowledge, Copilot automatically:
 
-- Writes a code-update report to `raw/code-updates/{user}-YYYY-MM-DD.md`
+- Creates fragment(s) in `wiki/fragments/{user}/` capturing new knowledge
+- Writes code-update report to `raw/code-updates/{user}-YYYY-MM-DD.md`
 - Updates your daily journal at `wiki/journal/{user}/YYYY-MM-DD.md`
-- Updates relevant entity/concept pages in the wiki
 - Appends to your operation log at `wiki/log/{user}/YYYY-MM-DD.md`
-- Regenerates `wiki/index.md` via the indexing script
+- Runs `compile-wiki.ps1` to refresh local compiled view
 
 **You don't need to ask.** This happens as the final step of every task.
 
-### 3. Document Ingestion — Raw → Wiki
+### 3. AI Synthesis
+
+Unlike v1 (which concatenated text), the LLM:
+- Reads all fragments for a topic from all developers
+- Identifies the latest authoritative information
+- Resolves contradictions intelligently
+- Considers authorship, recency, and source citations
+- Produces coherent understanding (not raw dump)
+- Optionally persists synthesis as a `type: synthesis` fragment for future sessions
+
+### 4. Document Ingestion
 
 When you add documents to `raw/` and confirm ingestion:
-
-- Creates a source summary page in `wiki/sources/`
-- Updates affected entity/concept pages with new knowledge
-- Flags contradictions if new info conflicts with existing wiki content
-- Adds inline citations (`[↗ raw/path/to/source.md]`) for traceability
-
-### 4. Query Answering — Wiki-First
-
-When you ask about the project, Copilot:
-
-- Searches the wiki **before** diving into code
-- Presents the wiki-based answer with citations
-- Offers to verify against current code if you want
-- Promotes valuable answers to `wiki/analysis/` pages for future reuse
+- Creates source summary fragment(s) in your fragments folder
+- Creates entity/concept fragments for affected topics
+- Flags contradictions via `action: correct` fragments
+- All traceable via source citations
 
 ---
 
-## Usage Guide
+## Daily Workflow
 
-### Daily Development Workflow
+### For Individual Developers
 
-1. **Start a chat** — Copilot loads context automatically. If new raw docs are detected, you'll be notified.
-2. **Code as normal** — Ask questions, fix bugs, implement features. Copilot consults the wiki for context.
-3. **End your task** — Copilot auto-updates the wiki. No action needed from you.
+1. **Start chat** — Copilot compiles and loads context automatically
+2. **Code as normal** — ask questions, fix bugs, implement features
+3. **End task** — Copilot writes fragments automatically
+4. **Commit & push** — only your own fragment files are changed (zero conflict risk)
+5. **Pull** — get teammates' fragments; next session will compile them
 
-### Adding New Documents
+### For Teams
 
-Drop files into the appropriate `raw/` subfolder:
+- Work independently — no coordination needed
+- Push/pull freely — fragments in separate folders never conflict
+- Knowledge accumulates — every developer's insights benefit the whole team
+- Contradictions are detected and flagged automatically
+- No "merge conflict resolution meetings" ever again
 
-| Document Type                       | Drop Location       |
-| ----------------------------------- | ------------------- |
-| Business requirements               | `raw/requirements/` |
-| Architecture/design docs            | `raw/design/`       |
-| Meeting notes, client feedback      | `raw/decisions/`    |
-| Security scans, performance reports | `raw/analysis/`     |
-| Architecture diagrams, service maps | `raw/architecture/` |
+---
 
-Next time you start a chat, Copilot will detect and offer to ingest them.
+## Reading the Wiki Without the LLM
 
-**Or trigger immediately:** Say `"ingest raw/requirements/new-doc.md"` in chat.
-
-### Asking Questions (Query)
-
-Just ask naturally. Examples:
-
-- "How does the notification service work?"
-- "What are the roles and permissions?"
-- "What's the claim workflow from submission to payment?"
-
-Copilot answers from the wiki first, then offers to verify against code.
-
-### Manual Commands
-
-| Command                      | What It Does                                                            |
-| ---------------------------- | ----------------------------------------------------------------------- |
-| `"ingest [path]"`            | Process a raw source into the wiki                                      |
-| `"ingest raw/requirements/"` | Batch-ingest all files in a folder                                      |
-| `"lint wiki"`                | Health-check: stale pages, orphans, contradictions, missing frontmatter |
-| `"update wiki"`              | Force a wiki update for the current session                             |
-| `"wrap up"`                  | Finalize session — write journal + log entries                          |
-
-### Regenerating the Index
-
-If you need to manually rebuild the index (rare — Copilot does this automatically):
+Need to browse knowledge without starting a Copilot session?
 
 ```powershell
-cd Second_Brain
-pwsh scripts/generate-index.ps1
+# Generate readable compiled pages locally
+pwsh scripts/compile-wiki.ps1
+
+# Then browse wiki/.compiled/ in any editor/browser
 ```
 
-### Reviewing the Operation Timeline
+The compiled output is a **mechanical assembly** (grouped by topic, sorted by time).
+For AI-quality synthesis, use the LLM — that's what it's for.
 
-Per-user logs are great for merge safety but make it harder to see "what happened across the team this week." Use `merge-logs.ps1` to recombine them into a single chronological view:
+---
 
-```powershell
-# Write merged view to wiki/.merged-log.md
-pwsh Second_Brain/scripts/merge-logs.ps1
+## Fragment Examples
 
-# Or just print the last 20 entries to the console
-pwsh Second_Brain/scripts/merge-logs.ps1 -Tail 20
+### Entity Fragment (recording service state)
+
+```markdown
+---
+type: entity
+target: auth-service
+section: token-management
+created: 2026-06-14T09:30
+author: fyang
+action: replace
+sources: [raw/design/auth-v3.md]
+tags: [authentication, jwt]
+---
+
+JWT expiry set to 30 minutes. Refresh token rotation enabled.
+Tokens stored in HttpOnly cookies to prevent XSS access.
+Configuration in appsettings.Production.json.
 ```
 
-The output is read-only and gitignored — regenerate any time.
+### Lesson Fragment (accumulates, never overwrites)
 
+```markdown
+---
+type: lesson
+target: lessons
+section: authentication
+created: 2026-06-14T10:00
+author: fyang
+action: append
+tags: [security, jwt]
 ---
 
-## Obsidian Conventions
-
-The wiki is a plain markdown folder, so any editor works — but Obsidian gives you wikilinks, graph view, and live preview essentially for free.
-
-### Recommended Setup
-
-| Setting                   | Value           | Why                                                |
-| ------------------------- | --------------- | -------------------------------------------------- |
-| Vault root                | `Second_Brain/` | Treat the whole second brain as one vault          |
-| Attachment folder         | `raw/assets/`   | Keeps downloaded images out of `wiki/` (LLM-owned) |
-| Default new-file location | `wiki/`         | Anything you create lands in the LLM-managed area  |
-
-In **Settings → Files and links**, set "Attachment folder path" to `raw/assets/`. Then in **Settings → Hotkeys**, search for "Download attachments for current file" and bind it (e.g. `Ctrl+Shift+D`). After clipping an article with Obsidian Web Clipper, hit the hotkey to localize all images so the LLM can view them directly.
-
-### Useful Plugins
-
-- **Web Clipper** (browser extension) — convert web articles to markdown straight into `raw/`. Drop URL → article appears in `raw/sources/` (or wherever you point it) → LLM ingests on next session.
-- **Graph view** (built-in) — best way to see wiki shape: hubs, orphans, clusters. Run `lint wiki` when the graph reveals islands.
-- **Dataview** — runs queries over YAML frontmatter. Our frontmatter (`created`, `updated`, `sources`, `tags`) is Dataview-compatible. Example:
-
-  ```dataview
-  TABLE updated, length(sources) AS "source count"
-  FROM "wiki/entities"
-  SORT updated DESC
-  LIMIT 10
-  ```
-
-- **Marp** — markdown-based slide decks. Use it when a query answer is better presented as slides than a wiki page. File deck output in `wiki/analysis/decks/` and link it from the analysis page.
-
-### Output Formats Beyond Markdown
-
-Query answers don't have to be pages. The LLM may produce:
-
-| Format                 | Where it goes                                       |
-| ---------------------- | --------------------------------------------------- |
-| Markdown analysis page | `wiki/analysis/*.md` (default)                      |
-| Marp slide deck        | `wiki/analysis/decks/*.md`                          |
-| Chart / diagram        | `wiki/analysis/charts/` (PNG/SVG) or inline mermaid |
-| Comparison table       | Inline in an analysis page                          |
-
-Whichever form is used, the artifact stays inside `wiki/analysis/` so it benefits from the same indexing, citations, and cross-referencing as everything else.
-
----
-
-## What Gets Tracked (Long-Term Memory)
-
-| Category              | Wiki Location                        | Use Case                                        |
-| --------------------- | ------------------------------------ | ----------------------------------------------- |
-| **Services**          | `wiki/entities/`                     | Code review — understand what each service does |
-| **Patterns**          | `wiki/concepts/`                     | Design — reuse established patterns             |
-| **Bug Fixes**         | `wiki/concepts/bug-fixes.md`         | Bug tracking — avoid repeating past mistakes    |
-| **Requirements**      | `wiki/requirements/status-matrix.md` | Sprint planning — track BR progress             |
-| **Lessons Learned**   | `wiki/lessons.md`                    | Code review — rules that prevent known issues   |
-| **Source Provenance** | `wiki/sources/`                      | Audit — trace any wiki claim back to its origin |
-| **Analyses**          | `wiki/analysis/`                     | Design — reuse past research and comparisons    |
-| **Daily Work**        | `wiki/journal/{user}/`               | Handoff — see what teammates did recently       |
-
----
-
-## Team Collaboration
-
-Multiple developers can use this simultaneously:
-
-- **Per-user files** (logs, journals, code-updates) — zero merge conflicts
-- **Shared pages** (entities, concepts) — use additive edits with `<!-- updated: user YYYY-MM-DD -->` stamps
-- **Auto-generated index** — never hand-edited, rebuilt by script
-- **Git-friendly** — all markdown, standard merge workflow for rare conflicts
-
-### Your Username
-
-Derived automatically from `git config user.name` → lowercase, no spaces.
-Example: "Frank Yang" → `fyang`
-
-All your personal files go under this username:
-
-- `wiki/log/fyang/2026-05-25.md`
-- `wiki/journal/fyang/2026-05-25.md`
-- `raw/code-updates/fyang-2026-05-25.md`
-
----
-
-## Design Principles
-
-1. **Knowledge compounds** — Every session makes the wiki richer. Unlike chat history that disappears, the wiki persists and grows.
-2. **Zero maintenance burden** — The LLM does all the bookkeeping. You never need to manually update the wiki.
-3. **Source of truth** — Raw documents are immutable. Wiki synthesizes. Claims are traceable via citations.
-4. **Contradiction-aware** — When new info conflicts with old, it's flagged explicitly rather than silently overwritten.
-5. **Forward-only provenance** — Every wiki page knows which raw sources informed it (via YAML frontmatter `sources:` field).
-
----
-
-## File Structure
-
+Never store JWT in localStorage — use HttpOnly cookies.
+localStorage is accessible to any script on the page (XSS vulnerable).
 ```
-Second_Brain/
-├── SCHEMA.md                    ← Operating rules (how the LLM maintains the wiki)
-├── USAGE-GUIDE.md               ← This file
-├── raw/                         ← Human-owned, immutable source documents
-│   ├── requirements/            ← Business requirements (BR docs)
-│   ├── design/                  ← Architecture & design decisions
-│   ├── decisions/               ← Meeting notes, client feedback
-│   ├── analysis/                ← Security scans, performance reports
-│   ├── architecture/            ← Service inventory, structure snapshots
-│   ├── sessions/                ← Chat transcripts (dropped by user)
-│   └── code-updates/            ← Auto-generated code change reports
-├── wiki/                        ← LLM-owned, auto-maintained
-│   ├── index.md                 ← Auto-generated catalog (never hand-edit)
-│   ├── overview.md              ← Project architecture synthesis
-│   ├── lessons.md               ← Accumulated corrections & rules
-│   ├── entities/                ← One page per service/component
-│   ├── concepts/                ← One page per cross-cutting pattern
-│   ├── sources/                 ← One summary page per ingested raw source
-│   ├── analysis/                ← Promoted query answers & syntheses
-│   ├── requirements/            ← BR status tracking
-│   ├── journal/{user}/          ← Daily session summaries (per user)
-│   └── log/{user}/              ← Operation log (per user)
-└── scripts/
-    ├── generate-index.ps1       ← Index regeneration script
-    ├── search-wiki.ps1          ← Keyword search across wiki pages
-    └── merge-logs.ps1           ← Recombines per-user logs into a single timeline
+
+### Correction Fragment (fixing wrong info)
+
+```markdown
+---
+type: entity
+target: auth-service
+section: token-management
+created: 2026-06-15T14:00
+author: jsmith
+action: correct
+supersedes: fyang/20260614-0930-auth-token-config.md
+---
+
+CORRECTION: JWT expiry is 15 minutes in production, not 30.
+Verified in appsettings.Production.json line 42.
+The 30-minute value is only for development environment.
 ```
 
 ---
 
-## Quick Start
+## Migration from v1
 
-1. **Just start coding.** The system works automatically via `.github/copilot-instructions.md`.
-2. **Drop documents** into `raw/` when you have new requirements or designs.
-3. **Ask questions** about the project — Copilot answers from accumulated knowledge.
-4. **Say "lint wiki"** occasionally to health-check the knowledge base.
+If you have an existing v1 wiki (shared `entities/`, `concepts/`, etc.):
 
-That's it. The LLM handles everything else.
+1. Each existing page becomes a `type: synthesis` fragment
+2. Move `wiki/entities/auth-service.md` → `wiki/fragments/{user}/{date}-auth-service-migration.md`
+3. Set `type: synthesis, action: replace` in frontmatter
+4. Old `wiki/entities/`, `wiki/concepts/` folders can be removed after migration
+5. `wiki/index.md`, `wiki/overview.md`, `wiki/lessons.md` become gitignored compiled output
+
+---
+
+## FAQ
+
+**Q: Where do I read the current project overview?**
+A: `wiki/.compiled/overview.md` — regenerated from fragments each session.
+
+**Q: What if two developers write conflicting info?**
+A: The compile script flags it. The next LLM session detects and resolves it by writing a `correct` fragment.
+
+**Q: Does this scale?**
+A: Yes. Synthesis fragments pre-compile AI understanding, so future sessions don't need to re-read hundreds of raw fragments. See SCHEMA §Scaling.
+
+**Q: What if I need to read the wiki on GitHub (web UI)?**
+A: Fragments are committed and readable directly. Or set up a CI job that runs `compile-wiki.ps1` and commits to a `wiki-compiled` branch.

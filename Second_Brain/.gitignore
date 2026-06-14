@@ -1,0 +1,3 @@
+# Compiled wiki output (regenerated from fragments by compile-wiki.ps1)
+# Never commit — each developer/CI regenerates locally
+wiki/.compiled/
