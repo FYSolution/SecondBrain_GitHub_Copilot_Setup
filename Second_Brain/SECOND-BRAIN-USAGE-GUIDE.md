@@ -1,4 +1,4 @@
-# Second Brain v2 — Usage Guide (Fragment Architecture)
+# Second Brain — Usage Guide (Fragment Architecture)
 
 ## What Is This?
 
@@ -6,9 +6,8 @@ The **Second Brain** is a persistent, LLM-maintained project wiki that lives alo
 It automatically captures, organizes, and surfaces project knowledge so that every future coding
 session benefits from everything the team has learned.
 
-### What's Different in v2?
+### Key Design Properties
 
-v2 uses **atomic fragments** instead of shared mutable pages. This means:
 - **Zero merge conflicts** — each developer writes only to their own folder
 - **AI synthesis** — the LLM intelligently combines knowledge from all developers
 - **Full history** — nothing is ever overwritten; knowledge evolution is traceable
@@ -44,18 +43,19 @@ v2 uses **atomic fragments** instead of shared mutable pages. This means:
 
 ### The Three Layers
 
-| Layer | Path | Who Owns It | Purpose |
-|---|---|---|---|
-| **Raw** | `raw/` | You (human) | Immutable source documents |
-| **Fragments** | `wiki/fragments/{user}/` | LLM (per-user) | Atomic knowledge units — the source of truth |
-| **Compiled** | `wiki/.compiled/` | LLM (local) | AI-synthesized readable pages — generated, never committed |
-| **Schema** | `SCHEMA.md` | Team | Rules that tell the LLM how to maintain the wiki |
+| Layer         | Path                     | Who Owns It    | Purpose                                                    |
+| ------------- | ------------------------ | -------------- | ---------------------------------------------------------- |
+| **Raw**       | `raw/`                   | You (human)    | Immutable source documents                                 |
+| **Fragments** | `wiki/fragments/{user}/` | LLM (per-user) | Atomic knowledge units — the source of truth               |
+| **Compiled**  | `wiki/.compiled/`        | LLM (local)    | AI-synthesized readable pages — generated, never committed |
+| **Schema**    | `SCHEMA.md`              | Team           | Rules that tell the LLM how to maintain the wiki           |
 
 ---
 
 ## Why Zero Conflicts?
 
 Each developer's LLM writes ONLY to:
+
 - `wiki/fragments/{your-username}/`
 - `wiki/log/{your-username}/`
 - `wiki/journal/{your-username}/`
@@ -94,7 +94,8 @@ After every task that produces knowledge, Copilot automatically:
 
 ### 3. AI Synthesis
 
-Unlike v1 (which concatenated text), the LLM:
+The LLM performs intelligent synthesis (not raw concatenation):
+
 - Reads all fragments for a topic from all developers
 - Identifies the latest authoritative information
 - Resolves contradictions intelligently
@@ -105,6 +106,7 @@ Unlike v1 (which concatenated text), the LLM:
 ### 4. Document Ingestion
 
 When you add documents to `raw/` and confirm ingestion:
+
 - Creates source summary fragment(s) in your fragments folder
 - Creates entity/concept fragments for affected topics
 - Flags contradictions via `action: correct` fragments
@@ -203,18 +205,6 @@ CORRECTION: JWT expiry is 15 minutes in production, not 30.
 Verified in appsettings.Production.json line 42.
 The 30-minute value is only for development environment.
 ```
-
----
-
-## Migration from v1
-
-If you have an existing v1 wiki (shared `entities/`, `concepts/`, etc.):
-
-1. Each existing page becomes a `type: synthesis` fragment
-2. Move `wiki/entities/auth-service.md` → `wiki/fragments/{user}/{date}-auth-service-migration.md`
-3. Set `type: synthesis, action: replace` in frontmatter
-4. Old `wiki/entities/`, `wiki/concepts/` folders can be removed after migration
-5. `wiki/index.md`, `wiki/overview.md`, `wiki/lessons.md` become gitignored compiled output
 
 ---
 

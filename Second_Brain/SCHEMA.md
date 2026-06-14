@@ -585,7 +585,3 @@ Keyword search over all fragment files and compiled pages.
 ```powershell
 pwsh scripts/search-wiki.ps1 "keyword1 keyword2" -Top 10
 ```
-
-### `scripts/generate-index.ps1`
-
-Legacy — replaced by `compile-wiki.ps1`. Kept for backward compatibility during migration.

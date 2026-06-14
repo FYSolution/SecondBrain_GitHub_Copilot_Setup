@@ -75,14 +75,14 @@ Fragments are **immutable after commit** — to update knowledge, you create a n
 
 ### Zero-Conflict Guarantee
 
-| Content Type | Path | Conflict Risk |
-|---|---|---|
-| Knowledge fragments | `wiki/fragments/{user}/` | **Impossible** — per-user folders |
-| Operation logs | `wiki/log/{user}/` | **Impossible** — per-user folders |
-| Daily journals | `wiki/journal/{user}/` | **Impossible** — per-user folders |
-| Code-update reports | `raw/code-updates/{user}-*.md` | **Impossible** — per-user files |
-| Raw sources | `raw/` | **None** — immutable after add |
-| Compiled output | `wiki/.compiled/` | **None** — gitignored |
+| Content Type        | Path                           | Conflict Risk                     |
+| ------------------- | ------------------------------ | --------------------------------- |
+| Knowledge fragments | `wiki/fragments/{user}/`       | **Impossible** — per-user folders |
+| Operation logs      | `wiki/log/{user}/`             | **Impossible** — per-user folders |
+| Daily journals      | `wiki/journal/{user}/`         | **Impossible** — per-user folders |
+| Code-update reports | `raw/code-updates/{user}-*.md` | **Impossible** — per-user files   |
+| Raw sources         | `raw/`                         | **None** — immutable after add    |
+| Compiled output     | `wiki/.compiled/`              | **None** — gitignored             |
 
 ### AI Synthesis (Not Dumb Concatenation)
 
@@ -133,7 +133,6 @@ Second_Brain/
 │   └── log/{user}/             # Per-user operation log
 └── scripts/
     ├── compile-wiki.ps1         # Compile fragments → .compiled/
-    ├── generate-index.ps1       # Legacy (redirects to compile-wiki.ps1)
     ├── merge-logs.ps1           # Combine per-user logs into timeline
     └── search-wiki.ps1          # Full-text search across fragments
 ```
@@ -210,6 +209,7 @@ Second_Brain/raw/
 ```
 
 **Tips:**
+
 - Convert Word/PDF docs to `.md` (use Pandoc: `pandoc input.docx -o output.md`)
 - Name files descriptively: `BR001-claims-submission.md`, `ADR-003-auth-strategy.md`
 - These files are **immutable** once added — the LLM reads but never modifies them
@@ -254,12 +254,12 @@ Get-ChildItem Second_Brain/wiki/.compiled/ -Recurse -Filter *.md
 
 Once set up, everything happens automatically:
 
-| Trigger | What Copilot Does |
-|---|---|
-| **Session start** | Compiles fragments, synthesizes understanding, detects new raw sources |
-| **Task completion** | Writes fragment(s), updates journal + log, recompiles |
-| **Question asked** | Searches fragments first, answers with citations, promotes novel synthesis |
-| **Document dropped** | Detects un-ingested sources, offers to process them |
+| Trigger              | What Copilot Does                                                          |
+| -------------------- | -------------------------------------------------------------------------- |
+| **Session start**    | Compiles fragments, synthesizes understanding, detects new raw sources     |
+| **Task completion**  | Writes fragment(s), updates journal + log, recompiles                      |
+| **Question asked**   | Searches fragments first, answers with citations, promotes novel synthesis |
+| **Document dropped** | Detects un-ingested sources, offers to process them                        |
 
 ### Manual Wiki Update
 
@@ -279,25 +279,25 @@ pwsh Second_Brain/scripts/compile-wiki.ps1
 
 ### When to Manually Trigger Wiki Updates
 
-| Scenario | What to Say to Copilot |
-|---|---|
-| Completed a major feature | `"Update wiki — I just finished [feature]. Capture the architecture decisions and lessons."` |
-| Made a design decision | `"Write a decision fragment — we chose [X] over [Y] because [reason]."` |
-| Found and fixed a tricky bug | `"Write a lesson fragment — [describe the issue and fix]."` |
-| Finished a design review | `"Ingest this design doc and update affected entity fragments."` |
-| End of day wrap-up | `"Wrap up — summarize today's work, write journal entry, and recompile wiki."` |
-| After pulling team changes | `"Recompile wiki and check for any conflicts or stale synthesis."` |
-| Mid-session important insight | `"Capture this — [insight]. Write a fragment before I forget."` |
+| Scenario                      | What to Say to Copilot                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------- |
+| Completed a major feature     | `"Update wiki — I just finished [feature]. Capture the architecture decisions and lessons."` |
+| Made a design decision        | `"Write a decision fragment — we chose [X] over [Y] because [reason]."`                      |
+| Found and fixed a tricky bug  | `"Write a lesson fragment — [describe the issue and fix]."`                                  |
+| Finished a design review      | `"Ingest this design doc and update affected entity fragments."`                             |
+| End of day wrap-up            | `"Wrap up — summarize today's work, write journal entry, and recompile wiki."`               |
+| After pulling team changes    | `"Recompile wiki and check for any conflicts or stale synthesis."`                           |
+| Mid-session important insight | `"Capture this — [insight]. Write a fragment before I forget."`                              |
 
 ### Commands Reference
 
-| Command | Effect |
-|---|---|
-| `"ingest [path]"` | Process a raw source into knowledge fragments |
-| `"lint wiki"` | Health-check: stale fragments, orphans, contradictions, gaps |
-| `"update wiki"` | Force a wiki update for current session's work |
-| `"wrap up"` | Finalize session — write journal + log + fragments |
-| `"recompile"` | Run compile-wiki.ps1 and reload context |
+| Command                 | Effect                                                                     |
+| ----------------------- | -------------------------------------------------------------------------- |
+| `"ingest [path]"`       | Process a raw source into knowledge fragments                              |
+| `"lint wiki"`           | Health-check: stale fragments, orphans, contradictions, gaps               |
+| `"update wiki"`         | Force a wiki update for current session's work                             |
+| `"wrap up"`             | Finalize session — write journal + log + fragments                         |
+| `"recompile"`           | Run compile-wiki.ps1 and reload context                                    |
 | `"synthesize [target]"` | Force AI synthesis for a specific target (e.g., "synthesize auth-service") |
 
 ---
@@ -330,16 +330,16 @@ Neither ever touches the other's files.
 
 The Second Brain pairs with the **Karpathy Guidelines** — a behavioral ruleset that prevents common LLM coding mistakes:
 
-| Principle | Effect |
-|---|---|
-| **Think Before Coding** | Check the wiki before writing business logic |
-| **Simplicity First** | Minimum code that solves the problem |
-| **Surgical Changes** | Touch only what's necessary |
-| **Goal-Driven Execution** | Task isn't done until wiki is updated |
+| Principle                 | Effect                                       |
+| ------------------------- | -------------------------------------------- |
+| **Think Before Coding**   | Check the wiki before writing business logic |
+| **Simplicity First**      | Minimum code that solves the problem         |
+| **Surgical Changes**      | Touch only what's necessary                  |
+| **Goal-Driven Execution** | Task isn't done until wiki is updated        |
 
 Together they create a feedback loop: the guidelines enforce wiki consultation and updates, while the wiki provides the knowledge that makes the guidelines effective.
 
-See [KARPATHY-GUIDELINES-GUIDE.md](GitHub_Copilot_Setup/Second_Brain/KARPATHY-GUIDELINES-GUIDE.md) for full details.
+See [KARPATHY-GUIDELINES-GUIDE.md](Second_Brain/KARPATHY-GUIDELINES-GUIDE.md) for full details.
 
 ---
 
@@ -393,11 +393,11 @@ Timeline ───────────────────────�
 
 ### Long-Term Vision
 
-| Phase | Capability |
-|---|---|
-| **Phase 1** (Now) | Capture knowledge and reasoning into timestamped, per-user fragments |
-| **Phase 2** | Aggregate Second Brain wikis across projects into org-level knowledge graph |
-| **Phase 3** | Train domain-specific AI on captured thinking flows for autonomous decision-making |
+| Phase             | Capability                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| **Phase 1** (Now) | Capture knowledge and reasoning into timestamped, per-user fragments               |
+| **Phase 2**       | Aggregate Second Brain wikis across projects into org-level knowledge graph        |
+| **Phase 3**       | Train domain-specific AI on captured thinking flows for autonomous decision-making |
 
 Every session you run today is an investment in future AI capability. Every correction logged teaches future systems what not to do. Every planning session captured models expert decision-making for AI training.
 
@@ -416,12 +416,11 @@ The wiki is plain markdown and works as an [Obsidian](https://obsidian.md) vault
 
 ## Scripts
 
-| Script | Purpose | Usage |
-|---|---|---|
-| `compile-wiki.ps1` | Compile fragments → `.compiled/` (manifest + pages) | `pwsh scripts/compile-wiki.ps1` |
-| `generate-index.ps1` | Legacy redirect → `compile-wiki.ps1` | `pwsh scripts/generate-index.ps1` |
-| `merge-logs.ps1` | Combine per-user logs into chronological view | `pwsh scripts/merge-logs.ps1 -Tail 20` |
-| `search-wiki.ps1` | Full-text search across fragments and compiled pages | `pwsh scripts/search-wiki.ps1 "query"` |
+| Script             | Purpose                                              | Usage                                  |
+| ------------------ | ---------------------------------------------------- | -------------------------------------- |
+| `compile-wiki.ps1` | Compile fragments → `.compiled/` (manifest + pages)  | `pwsh scripts/compile-wiki.ps1`        |
+| `merge-logs.ps1`   | Combine per-user logs into chronological view        | `pwsh scripts/merge-logs.ps1 -Tail 20` |
+| `search-wiki.ps1`  | Full-text search across fragments and compiled pages | `pwsh scripts/search-wiki.ps1 "query"` |
 
 ---
 

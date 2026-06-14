@@ -131,9 +131,9 @@ The two systems are complementary:
 ├─────────────────────────────────────────────────────────┤
 │                                                           │
 │  Feeds INTO Karpathy Rule 1:                             │
-│  → wiki/entities/ — how each service works               │
-│  → wiki/concepts/ — patterns, auth, workflows            │
-│  → wiki/lessons.md — mistakes to avoid                   │
+│  → wiki/.compiled/entities/ — how each service works     │
+│  → wiki/.compiled/concepts/ — patterns, auth, workflows  │
+│  → wiki/.compiled/lessons.md — mistakes to avoid         │
 │                                                           │
 │  Fed BY Karpathy Rule 4:                                 │
 │  → Every completed task updates the wiki                 │
@@ -171,10 +171,10 @@ With Karpathy Guidelines + Second Brain:
 ```
 You: "Fix bug 61449 — Draft Appeal Decision auto-saves without confirmation"
 Copilot:
-  1. Checks wiki/concepts/bug-fixes.md → sees pattern of similar fixes
-  2. Checks wiki/entities/appeal-decision-service.md → understands the service
+  1. Checks wiki/.compiled/concepts/bug-fixes.md → sees pattern of similar fixes
+  2. Checks wiki/.compiled/entities/appeal-decision-service.md → understands the service
   3. States assumptions: "The fix should follow the temp-status pattern used for
-     Deficiency Letters (per wiki/sources/issue-determination-temp-status)"
+     Deficiency Letters (per wiki/.compiled/sources/issue-determination-temp-status)"
   4. Makes ONE surgical change to the specific auto-save logic
   5. Updates wiki: bug-fixes.md + appeal-decision-service.md + log entry
 ```
@@ -184,7 +184,7 @@ Copilot:
 ```
 You: "How does the claim status workflow work?"
 Copilot:
-  1. Reads wiki/concepts/claim-workflow.md (Karpathy Rule 1 — check wiki first)
+  1. Reads wiki/.compiled/concepts/claim-workflow.md (Karpathy Rule 1 — check wiki first)
   2. Presents synthesized answer with citations
   3. Offers: "Want me to verify against current code?"
   4. Does NOT launch code searches until asked (Simplicity First)
@@ -195,8 +195,8 @@ Copilot:
 ```
 You: "Add email notification when appeal is submitted"
 Copilot:
-  1. Checks wiki/entities/notification-service.md → existing template patterns
-  2. Checks wiki/concepts/email-templates.md → EM01-EM12 conventions
+  1. Checks wiki/.compiled/entities/notification-service.md → existing template patterns
+  2. Checks wiki/.compiled/concepts/email-templates.md → EM01-EM12 conventions
   3. States: "I'll follow the existing EM template pattern. The new template
      would be EM13. Shall I proceed?"
   4. Implements ONLY the requested notification (nothing extra)

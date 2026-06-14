@@ -29,25 +29,26 @@ Use this as `{user}` in all per-user file paths. If ambiguous, use the system us
 ### Session Start
 
 Follow the **Session Start (Context Loading)** procedure in `Second_Brain/SCHEMA.md`.
-Key behaviors: read `wiki/index.md` and your own latest log at `wiki/log/{user}/`,
-scan other users' recent logs for team awareness, read `wiki/lessons.md`, read the
-relevant `wiki/entities/` page for the current task, and **auto-ingest** any
-un-ingested raw sources without waiting for user confirmation (notify the user after
-completion).
+Key behaviors: run `scripts/compile-wiki.ps1`, read `wiki/.compiled/index.md` and your
+own latest log at `wiki/log/{user}/`, scan other users' recent logs for team awareness,
+read `wiki/.compiled/lessons.md`, read the relevant `wiki/.compiled/entities/` page for
+the current task, and **auto-ingest** any un-ingested raw sources without waiting for
+user confirmation (notify the user after completion).
 
 ### Query Priority
 
 For ANY question about project design, architecture, features, or business logic —
-consult `Second_Brain/wiki/` FIRST. Read the wiki index, identify the correct page
-**by topic**, read that page, and present the wiki-based answer.
+consult `Second_Brain/wiki/` FIRST. Read the compiled wiki index at
+`wiki/.compiled/index.md`, identify the correct page **by topic**, read that page,
+and present the wiki-based answer.
 Do NOT launch code searches in parallel with wiki reads.
 After presenting the wiki answer, offer: "Want me to verify this against the current code?"
 Only dive into code unprompted for details not covered by the wiki at all.
 
 **Auto-update wiki after queries:** If the answer reveals new knowledge about a service,
-pattern, or feature, update the relevant `wiki/entities/` or `wiki/concepts/` page
-immediately. Do NOT wait for the user to ask. If the query produced a novel comparison,
-analysis, or synthesis worth keeping, promote it to a new page in `wiki/analysis/`.
+pattern, or feature, write a new fragment to `wiki/fragments/{user}/` with appropriate
+type and target. Do NOT wait for the user to ask. If the query produced a novel comparison,
+analysis, or synthesis worth keeping, write a `type: analysis` fragment.
 See `Second_Brain/SCHEMA.md` § Query for the full procedure.
 
 ### Wiki Search Tool
@@ -79,11 +80,11 @@ analysis, bug investigation, or architecture exploration), follow the same phase
 workflow defined in `.github/agents/second_brain_planner.agent.md`:
 
 1. **Phase 1 — Wiki Context (mandatory first step)**:
-   Read `wiki/index.md` → identify relevant pages → read them → present wiki-based context.
+   Read `wiki/.compiled/index.md` → identify relevant pages → read them → present wiki-based context.
    Do NOT start code exploration until wiki consultation is complete.
 
 2. **Phase 2 — Analysis & Design**:
-   Cross-reference `wiki/lessons.md` for known pitfalls. Only explore code for details
+   Cross-reference `wiki/.compiled/lessons.md` for known pitfalls. Only explore code for details
    NOT covered by the wiki. Present options with pros/cons.
 
 3. **Phase 3 — Structured Plan**:
@@ -105,10 +106,10 @@ For code modification tasks, structure todo lists as:
 
 **Pre-load (first items):**
 
-1. Read `wiki/index.md` → identify relevant entity/concept pages
-2. Read identified pages for documented behavior and contracts
-3. Read `wiki/lessons.md` for applicable rules and known pitfalls
-4. (If bug-fix) Read `wiki/concepts/bug-fixes.md` for related patterns
+1. Run `scripts/compile-wiki.ps1` → read `wiki/.compiled/index.md` → identify relevant entity/concept pages
+2. Read identified pages in `wiki/.compiled/` for documented behavior and contracts
+3. Read `wiki/.compiled/lessons.md` for applicable rules and known pitfalls
+4. (If bug-fix) Read `wiki/.compiled/concepts/bug-fixes.md` for related patterns
 
 Only proceed to code exploration for details NOT covered by the wiki.
 
@@ -151,9 +152,9 @@ codebase query answers (update entity pages if new knowledge surfaced).
 
 ### Error Recovery
 
-- If `generate-index.ps1` fails: report the error, do NOT retry in a loop. Ask the user to check the script manually.
-- If a referenced wiki page does not exist: create it with a minimal stub (title + `<!-- TODO: flesh out -->`) rather than skipping the update.
-- If `wiki/index.md` is missing or corrupt: notify the user and proceed without wiki pre-load. Do NOT block the task.
+- If `compile-wiki.ps1` fails: report the error, do NOT retry in a loop. Ask the user to check the script manually.
+- If a referenced wiki page does not exist: create a new fragment in `wiki/fragments/{user}/` rather than skipping the update.
+- If `wiki/.compiled/index.md` is missing or corrupt: re-run `scripts/compile-wiki.ps1`. If still broken, notify the user and proceed without wiki pre-load. Do NOT block the task.
 
 ### Team-Safe File Rules
 
@@ -167,10 +168,10 @@ The agent recognizes these explicit user commands; each delegates to the corresp
 section in `Second_Brain/SCHEMA.md`:
 
 - **`ingest [path]`** — Ingest a specific raw source. See `SCHEMA.md` § Ingest for the
-  full procedure (read source, create `wiki/sources/{slug}.md`, update entity/concept
-  pages, flag contradictions, log entry, regenerate index).
+  full procedure (read source, create `wiki/fragments/{user}/{timestamp}-source-{slug}.md`,
+  update affected entity/concept fragments, flag contradictions, log entry, recompile).
 - **`lint wiki`** — Run wiki health check. See `SCHEMA.md` § Lint for the full checklist
-  (un-ingested sources, orphan pages, stale info, missing frontmatter, contradictions, etc.).
+  (un-ingested sources, orphan fragments, stale info, missing frontmatter, contradictions, etc.).
 
 Both commands follow their own procedures and do NOT require the standard Task Completion
 flow — their procedures already include the appropriate log/index updates.
