@@ -51,6 +51,47 @@ The Second Brain uses an **atomic fragment architecture** — each developer wri
 
 ## Architecture
 
+### Knowledge Pipeline — Three Stages
+
+Understanding the Second Brain requires knowing three distinct concepts and how they connect:
+
+```
+┌─────────────────────┐    compile-wiki.ps1    ┌──────────────────────┐
+│  1. FRAGMENTS       │ ─────────────────────▶ │  2. .COMPILED WIKI   │
+│  (Source of Truth)   │   mechanical grouping  │  (Mechanical Assembly)│
+│                     │                        │                      │
+│  wiki/fragments/    │                        │  wiki/.compiled/     │
+│  Per-user, immutable│                        │  Gitignored, local   │
+│  Committed to git   │                        │  Sorted & formatted  │
+└─────────────────────┘                        └──────────────────────┘
+         │                                                │
+         │  LLM reads fragments directly                  │  provides manifest
+         │  (using manifest as a map)                     │  & index as guide
+         ▼                                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                    3. AI SYNTHESIS                                  │
+│                  (Intelligent Understanding)                       │
+│                                                                    │
+│  • Resolves contradictions      • Determines current truth         │
+│  • Considers authorship/recency • Detects staleness                │
+│  • Produces coherent narratives • Optionally writes back as        │
+│                                   type: synthesis fragment         │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+| Aspect               | Fragments                   | `.compiled` Wiki                             | AI Synthesis                                       |
+| -------------------- | --------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| **Nature**           | Individual knowledge atoms  | Mechanically assembled pages                 | Intelligent understanding                          |
+| **Intelligence**     | None (just data)            | None (just sorting/grouping)                 | **Yes** — resolves conflicts, infers current truth |
+| **Committed to git** | Yes                         | No (gitignored)                              | Yes, if persisted as `type: synthesis` fragment    |
+| **Created by**       | LLM after tasks             | PowerShell script                            | LLM at session start / on query                    |
+| **Purpose**          | Store knowledge permanently | Provide a navigable index for humans and LLM | Produce correct, coherent understanding for coding |
+| **Analogy**          | Individual Lego bricks      | Bricks sorted into labeled bins              | A finished model built from the bricks             |
+
+**In short:** Fragments are the **source of truth**. `.compiled` is a **table of contents** that organizes them mechanically. AI Synthesis is the **actual understanding** the LLM builds by reading fragments intelligently — and it can save that understanding back as a new synthesis fragment so future sessions don't redo the work.
+
+---
+
 ### How Fragments Work
 
 Every piece of knowledge is stored as an **atomic fragment** — a small markdown file with YAML frontmatter declaring its type, target, and merge strategy:
@@ -97,44 +138,105 @@ When the LLM reads fragments at session start, it applies intelligent synthesis:
 
 Synthesis is committed to Git like any other fragment. Once one developer's LLM synthesizes, all other developers get it on `git pull` — no repeated work.
 
-### Directory Structure
+### Action Rules — How Compilation Decides What to Show
+
+Each fragment declares an `action` field in its YAML frontmatter. This tells the compile script how to display that fragment relative to other fragments for the same target.
+
+**How the action is determined (two levels):**
+
+1. **Explicit declaration** — The LLM sets `action:` in the frontmatter when creating the fragment:
+
+   ```yaml
+   action: replace # ← LLM chose this based on the knowledge type
+   ```
+
+2. **Default fallback** — If `action:` is omitted, the compile script assigns a default based on `type:`:
+
+   | Fragment `type` | Default `action` | Reasoning                                            |
+   | --------------- | ---------------- | ---------------------------------------------------- |
+   | `entity`        | `replace`        | You want the latest state, not all historical states |
+   | `concept`       | `replace`        | Latest understanding supersedes older                |
+   | `source`        | `replace`        | Latest document summary wins                         |
+   | `overview`      | `replace`        | Latest project overview wins                         |
+   | `synthesis`     | `replace`        | Latest AI synthesis wins                             |
+   | `lesson`        | `append`         | Every lesson is valuable — never discard             |
+   | `decision`      | `append`         | Decision history matters — never discard             |
+   | `analysis`      | `append`         | Investigation results accumulate                     |
+
+**How the compile script applies the rules:**
+
+For each target+section group, the script separates fragments by action and renders them in this order:
+
+| Action    | Display Rule                           | Visual Treatment                                          |
+| --------- | -------------------------------------- | --------------------------------------------------------- |
+| `correct` | **Shown first, prominently**           | Blockquote with ⚠️ warning icon — impossible to miss      |
+| `replace` | **Latest only shown as current truth** | Older versions collapsed in a `<details>` history block   |
+| `append`  | **All shown, newest first**            | Each displayed with timestamp and author — nothing hidden |
+
+**Concrete walkthrough — 4 fragments targeting `auth-service` / section `token-management`:**
+
+| #   | Created | Author | Action    | Content                             |
+| --- | ------- | ------ | --------- | ----------------------------------- |
+| 1   | June 10 | fyang  | `replace` | "JWT expiry: 30 min"                |
+| 2   | June 12 | fyang  | `replace` | "JWT expiry: 20 min"                |
+| 3   | June 14 | jsmith | `correct` | "CORRECTION: JWT is 15 min in prod" |
+| 4   | June 14 | fyang  | `append`  | "Lesson: always check prod config"  |
+
+The compiled output in `.compiled/entities/auth-service.md` would render as:
+
+```markdown
+## Token Management
+
+> ⚠️ **Correction** (jsmith, 2026-06-14): ← correct: shown first
+> CORRECTION: JWT is 15 min in prod
+
+JWT expiry: 20 min ← replace: only #2 shown (latest)
+
+<details><summary>History (1 prior version)</summary>
+- **2026-06-10 (fyang)** [superseded]               ← replace: #1 hidden in history
+  JWT expiry: 30 min
+</details>
+
+### [2026-06-14 fyang] ← append: always shown
+
+Lesson: always check prod config
+```
+
+**Then AI Synthesis takes over:** The LLM reads these fragments, understands that #3 corrects #1 and #2, checks `raw/code-updates/` for verification, and produces a single coherent understanding: _"JWT expiry is 15 minutes in production. Refresh rotation enabled. HttpOnly cookies."_ — which it can then use to write correct code and optionally persist as a `type: synthesis` fragment.
+
+### Directory Structure (after install)
 
 ```
-Second_Brain/
-├── SCHEMA.md                    # Operating rules for the LLM
-├── SECOND-BRAIN-USAGE-GUIDE.md  # Detailed usage documentation
-├── KARPATHY-GUIDELINES-GUIDE.md # Companion coding discipline guide
-├── .gitignore                   # Ignores wiki/.compiled/
-├── raw/                         # Human-owned, immutable sources
-│   ├── requirements/            # Business requirement docs
-│   ├── design/                  # Architecture & design decisions
-│   ├── decisions/               # Meeting notes, client feedback
-│   ├── analysis/                # Security scans, performance reports
-│   ├── architecture/            # Solution structure snapshots
-│   ├── code-updates/            # Per-user code change reports
-│   └── sessions/                # Chat transcripts / session notes
-├── wiki/                        # LLM-maintained knowledge
-│   ├── fragments/               # Atomic knowledge units (per-user folders)
-│   │   ├── {user}/             # Each dev writes ONLY here
-│   │   │   ├── YYYYMMDD-HHMM-topic.md
-│   │   │   └── ...
-│   │   └── README.md           # Fragment format documentation
-│   ├── .compiled/              # GITIGNORED — assembled view
-│   │   ├── _manifest.json      # Structured catalog of all fragments
-│   │   ├── index.md            # Navigable page list with stats
-│   │   ├── overview.md         # Project architecture synthesis
-│   │   ├── lessons.md          # All accumulated lessons
-│   │   ├── decisions.md        # All design decisions
-│   │   ├── entities/           # Assembled entity pages
-│   │   ├── concepts/           # Assembled concept pages
-│   │   ├── sources/            # Assembled source summaries
-│   │   └── analysis/           # Assembled analysis pages
-│   ├── journal/{user}/         # Per-user daily session summaries
-│   └── log/{user}/             # Per-user operation log
-└── scripts/
-    ├── compile-wiki.ps1         # Compile fragments → .compiled/
-    ├── merge-logs.ps1           # Combine per-user logs into timeline
-    └── search-wiki.ps1          # Full-text search across fragments
+your-project/
+├── .github/
+│   ├── copilot-instructions.md          # Main Copilot behavior config
+│   ├── agents/
+│   │   └── second_brain_planner.agent.md # Wiki-aware planning agent
+│   └── instructions/
+│       └── karpathy-guidelines.instructions.md # Coding discipline rules
+├── Second_Brain/
+│   ├── SCHEMA.md                    # Operating rules for the LLM
+│   ├── SECOND-BRAIN-USAGE-GUIDE.md  # Detailed usage documentation
+│   ├── KARPATHY-GUIDELINES-GUIDE.md # Companion coding discipline guide
+│   ├── .gitignore                   # Ignores wiki/.compiled/
+│   ├── raw/                         # Human-owned, immutable sources
+│   │   ├── requirements/            # Business requirement docs
+│   │   ├── design/                  # Architecture & design decisions
+│   │   ├── decisions/               # Meeting notes, client feedback
+│   │   ├── analysis/                # Security scans, performance reports
+│   │   ├── architecture/            # Solution structure snapshots
+│   │   ├── code-updates/            # Per-user code change reports
+│   │   └── sessions/                # Chat transcripts / session notes
+│   ├── wiki/                        # LLM-maintained knowledge
+│   │   ├── fragments/{user}/        # Atomic knowledge units (per-user)
+│   │   ├── .compiled/              # GITIGNORED — assembled view
+│   │   ├── journal/{user}/         # Per-user daily session summaries
+│   │   └── log/{user}/             # Per-user operation log
+│   └── scripts/
+│       ├── compile-wiki.ps1         # Compile fragments → .compiled/
+│       ├── merge-logs.ps1           # Combine per-user logs into timeline
+│       └── search-wiki.ps1          # Full-text search across fragments
+└── ... (your source code)
 ```
 
 ---
@@ -143,49 +245,41 @@ Second_Brain/
 
 ### 1. Copy into your repo
 
+Copy the contents of `GitHub_Copilot_Setup/` into your project root:
+
 ```bash
 # Clone this template
-git clone https://github.com/FYSolution/SecondBrain_GitHub_Copilot_Setup.git
+git clone https://dev.azure.com/BDOInternal/SPARQ/_git/SecondBrainTemplate
 
-# Copy the Second_Brain folder into your project
-cp -r SecondBrain_GitHub_Copilot_Setup/Second_Brain /path/to/your-project/
-
-# Copy the .github folder into your project ROOT
-cp -r SecondBrain_GitHub_Copilot_Setup/.github /path/to/your-project/
+# Copy both folders into your project root
+cp -r SecondBrainTemplate/GitHub_Copilot_Setup/.github /path/to/your-project/
+cp -r SecondBrainTemplate/GitHub_Copilot_Setup/Second_Brain /path/to/your-project/
 ```
 
-> **⚠️ IMPORTANT: The `.github` folder MUST be placed at the workspace/solution root.**
->
-> VS Code and GitHub Copilot only recognize `.github/copilot-instructions.md` and `.github/agents/` from the **root** of your workspace. If placed inside a subfolder, it will be ignored.
->
-> If your repo already has a `.github` folder, **merge** the contents:
->
-> ```bash
-> cp SecondBrain_GitHub_Copilot_Setup/.github/copilot-instructions.md /path/to/your-project/.github/
-> cp -r SecondBrain_GitHub_Copilot_Setup/.github/agents/ /path/to/your-project/.github/agents/
-> cp -r SecondBrain_GitHub_Copilot_Setup/.github/instructions/ /path/to/your-project/.github/instructions/
-> ```
+Your project should end up with:
 
-### 2. Configure your Copilot instructions
-
-Add to your `.github/copilot-instructions.md`:
-
-```markdown
-## Second Brain
-
-At session start, run `pwsh Second_Brain/scripts/compile-wiki.ps1` to compile fragments,
-then read `Second_Brain/wiki/.compiled/index.md` for full project context.
-
-After every task that modifies code or produces reusable knowledge:
-
-1. Write knowledge fragments to `Second_Brain/wiki/fragments/{user}/`
-2. Write a code-update report to `Second_Brain/raw/code-updates/{user}-YYYY-MM-DD.md`
-3. Update your daily journal at `Second_Brain/wiki/journal/{user}/`
-4. Append to your operation log at `Second_Brain/wiki/log/{user}/`
-5. Run `pwsh Second_Brain/scripts/compile-wiki.ps1` to refresh the compiled view
+```
+your-project/
+├── .github/
+│   ├── copilot-instructions.md
+│   ├── agents/
+│   │   └── second_brain_planner.agent.md
+│   └── instructions/
+│       └── karpathy-guidelines.instructions.md
+├── Second_Brain/
+│   ├── SCHEMA.md
+│   ├── raw/
+│   ├── wiki/
+│   └── scripts/
+└── ... (your existing code)
 ```
 
-### 3. Set your username
+> **⚠️ IMPORTANT: `.github/` and `Second_Brain/` MUST be at the workspace root.**
+>
+> VS Code only loads `.github/copilot-instructions.md` and `.github/agents/` from the root.
+> If your repo already has a `.github/` folder, merge the contents rather than overwriting.
+
+### 2. Set your username
 
 ```bash
 # Option A: environment variable
@@ -195,7 +289,7 @@ export SECOND_BRAIN_USER=yourname
 git config user.name  # "Jane Smith" → "janesmith"
 ```
 
-### 4. Populate the `raw/` folder
+### 3. Populate the `raw/` folder
 
 Gather existing project knowledge and copy as markdown into `raw/`:
 
@@ -214,9 +308,9 @@ Second_Brain/raw/
 - Name files descriptively: `BR001-claims-submission.md`, `ADR-003-auth-strategy.md`
 - These files are **immutable** once added — the LLM reads but never modifies them
 
-### 5. Bootstrap the wiki
+### 4. Bootstrap the wiki
 
-Open VS Code **Agent Mode** chat (Ctrl+Shift+I), choose a capable model (e.g., **Claude Opus 4.6** or **GPT-4o**), then run:
+Open VS Code **Agent Mode** chat (Ctrl+Shift+I), choose a capable model (e.g., **Claude Opus 4** or **GPT-4o**), then run:
 
 ```
 Scan the entire source code repository and all documents in Second_Brain/raw/ folder.
@@ -235,7 +329,7 @@ Each fragment must have proper YAML frontmatter (type, target, section, created,
 Add inline citations [↗ raw/path/to/source.md] linking back to raw sources.
 ```
 
-### 6. Verify
+### 5. Verify
 
 ```powershell
 # Compile and check output
@@ -416,11 +510,11 @@ The wiki is plain markdown and works as an [Obsidian](https://obsidian.md) vault
 
 ## Scripts
 
-| Script             | Purpose                                              | Usage                                  |
-| ------------------ | ---------------------------------------------------- | -------------------------------------- |
-| `compile-wiki.ps1` | Compile fragments → `.compiled/` (manifest + pages)  | `pwsh scripts/compile-wiki.ps1`        |
-| `merge-logs.ps1`   | Combine per-user logs into chronological view        | `pwsh scripts/merge-logs.ps1 -Tail 20` |
-| `search-wiki.ps1`  | Full-text search across fragments and compiled pages | `pwsh scripts/search-wiki.ps1 "query"` |
+| Script             | Purpose                                              | Usage                                               |
+| ------------------ | ---------------------------------------------------- | --------------------------------------------------- |
+| `compile-wiki.ps1` | Compile fragments → `.compiled/` (manifest + pages)  | `pwsh Second_Brain/scripts/compile-wiki.ps1`        |
+| `merge-logs.ps1`   | Combine per-user logs into chronological view        | `pwsh Second_Brain/scripts/merge-logs.ps1 -Tail 20` |
+| `search-wiki.ps1`  | Full-text search across fragments and compiled pages | `pwsh Second_Brain/scripts/search-wiki.ps1 "query"` |
 
 ---
 
